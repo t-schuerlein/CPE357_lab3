@@ -30,17 +30,19 @@ int main(){
     first -> info = 0;
     first -> size = (1048576 - sizeof(chunkhead));
 
-
-    printf("sizeof chunkhead = %d\n", sizeof(chunkhead));
-    // analyse();
-
-    mymalloc(50);
-    mymalloc(2000);
-
-    analyse();
+unsigned char *a,*b,*c;
+    a = mymalloc(1000);
+b = mymalloc(1000);
+c = mymalloc(1000);
+printf("trying to find %x\n", b);
+myfree(b);
+// myfree(a);
+analyse();
 
 }
 
+
+// fix return pointer value
 unsigned char* mymalloc( int size){
     chunkhead *p = (chunkhead*) myheap;
 
@@ -52,14 +54,14 @@ unsigned char* mymalloc( int size){
             p->info = 1;
             int alloc_size = 0;
 
-            printf("alloc size - chunk head = %d\nsize = %d\n", (alloc_size -sizeof(chunkhead)), size);
+            // printf("alloc size - chunk head = %d\nsize = %d\n", (alloc_size -sizeof(chunkhead)), size);
 
             // FIXME error check to make sure we 
             while( size + sizeof(chunkhead)  > (alloc_size ) ){
-                printf("making alloc size bigger %d", alloc_size);
+                // printf("making alloc size bigger %d", alloc_size);
                 alloc_size += PAGESIZE;
             }
-            printf("alloc bytes ended up at %d\n", alloc_size);
+            // printf("alloc bytes ended up at %d\n", alloc_size);
            
            int remaining_mem = p -> size - alloc_size;
             p -> size = alloc_size;
@@ -73,7 +75,7 @@ unsigned char* mymalloc( int size){
             p -> next = (unsigned char*) nextHead;
 
 
-            return returnThis;
+             return returnThis;
         }
     }
 
@@ -83,6 +85,43 @@ unsigned char* mymalloc( int size){
 
 
 void myfree(unsigned char* address){
+
+    chunkhead* iter = (chunkhead*) myheap;
+    
+    
+
+    for(; iter != NULL; iter = (chunkhead*) iter -> next ){
+
+        chunkhead* lastChunk = (chunkhead *) iter -> prev;
+        chunkhead* nextChunk = (chunkhead *) iter -> next;
+
+        //TODO combine neighboring free blocks
+        if( iter == (chunkhead *) address){
+            // free 
+            iter -> info = 0;
+            printf("found the address %x" ,address);
+        }
+        if (iter -> info == 0 && nextChunk && nextChunk -> info == 0){
+            // curr is first, next is second
+            chunkhead * kill = nextChunk;
+            chunkhead * keep = iter;
+            keep -> size += kill -> size;
+            keep -> next = kill -> next;
+            chunkhead *newNext =  (chunkhead *)kill -> next;
+            newNext -> prev = (unsigned char *) keep;
+        }
+        if(iter-> info == 0 && lastChunk && lastChunk -> info  == 0){
+            // last is first, curr is second
+            chunkhead * kill = iter;
+            chunkhead * keep = iter;
+            keep -> size += kill -> size;
+            keep -> next = kill -> next;
+            chunkhead *newNext =  (chunkhead *)kill -> next;
+            newNext -> prev = (unsigned char *) keep;
+
+        }
+        
+    }
 
 }
 
@@ -94,9 +133,15 @@ void analyse(){
 
     for(; iter  != NULL; iter = (chunkhead*) iter -> next){
         cout << "Chunk #" << index << ":" <<endl;
+        printf("address: %x\n", iter);
         printf("Size = %d bytes\n", iter->size);
+        if(iter -> info == 0){
+            cout << "Free" << endl;
+        } else {
+            cout << "Occupied" << endl;
+        }
         printf("Next = %x\n", iter -> next);
-        printf("Prev = %x\n", iter -> prev);
+        printf("Prev = %x\n\n", iter -> prev);
 
 
         index += 1;
