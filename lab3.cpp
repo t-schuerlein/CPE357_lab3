@@ -34,9 +34,9 @@ unsigned char *a,*b,*c;
     a = mymalloc(1000);
 b = mymalloc(1000);
 c = mymalloc(1000);
-printf("trying to find %x\n", b);
+// printf("trying to find %p\n", (void *)b);
 myfree(b);
-// myfree(a);
+myfree(a);
 analyse();
 
 }
@@ -44,6 +44,7 @@ analyse();
 
 // fix return pointer value
 unsigned char* mymalloc( int size){
+
     chunkhead *p = (chunkhead*) myheap;
 
     for(; p != NULL; p = (chunkhead*) p -> next){
@@ -56,30 +57,37 @@ unsigned char* mymalloc( int size){
 
             // printf("alloc size - chunk head = %d\nsize = %d\n", (alloc_size -sizeof(chunkhead)), size);
 
-            // FIXME error check to make sure we 
+            // allocating the proper amount of space for "size"
             while( size + sizeof(chunkhead)  > (alloc_size ) ){
                 // printf("making alloc size bigger %d", alloc_size);
                 alloc_size += PAGESIZE;
             }
+            
+
             // printf("alloc bytes ended up at %d\n", alloc_size);
            
-           int remaining_mem = p -> size - alloc_size;
+           // amount of memory remaining = (rest mem) - (size we're allocating) - (new chunkhead size) 
+            int remaining_mem = p -> size  - alloc_size - sizeof(chunkhead);
+            
+            // set allocated size for p
             p -> size = alloc_size;
 
-            unsigned char* returnThis =  ((Byte*) p + sizeof(chunkhead));
 
-            chunkhead* nextHead = (chunkhead*) (returnThis + (p -> size));
+
+            chunkhead* nextHead = (chunkhead*) ( (unsigned char *) p + sizeof(chunkhead) + p -> size);
             nextHead -> next = p-> next;
             nextHead -> prev = (unsigned char*) p;
-            nextHead -> size = remaining_mem -sizeof(chunkhead);
+            nextHead -> size = remaining_mem ;
             p -> next = (unsigned char*) nextHead;
 
 
-             return returnThis;
+             return (unsigned char*) p + sizeof(chunkhead);
         }
     }
 
-    printf("got to the end of for loop without answer!\n");
+    // printf("got to the end of for loop without answer!\n");
+    unsigned char* blank = NULL;
+    return blank;
 
 }
 
@@ -87,8 +95,6 @@ unsigned char* mymalloc( int size){
 void myfree(unsigned char* address){
 
     chunkhead* iter = (chunkhead*) myheap;
-    
-    
 
     for(; iter != NULL; iter = (chunkhead*) iter -> next ){
 
@@ -96,10 +102,10 @@ void myfree(unsigned char* address){
         chunkhead* nextChunk = (chunkhead *) iter -> next;
 
         //TODO combine neighboring free blocks
-        if( iter == (chunkhead *) address){
+        if( (unsigned char*)iter == (unsigned char *) address - sizeof(chunkhead)){
             // free 
             iter -> info = 0;
-            printf("found the address %x" ,address);
+            // printf("found the address %p\n" , (void *)  address);
         }
         if (iter -> info == 0 && nextChunk && nextChunk -> info == 0){
             // curr is first, next is second
@@ -133,15 +139,15 @@ void analyse(){
 
     for(; iter  != NULL; iter = (chunkhead*) iter -> next){
         cout << "Chunk #" << index << ":" <<endl;
-        printf("address: %x\n", iter);
+        printf("address: %p\n", (void *) iter);
         printf("Size = %d bytes\n", iter->size);
         if(iter -> info == 0){
             cout << "Free" << endl;
         } else {
             cout << "Occupied" << endl;
         }
-        printf("Next = %x\n", iter -> next);
-        printf("Prev = %x\n\n", iter -> prev);
+        printf("Next = %p\n", (void *) (iter -> next) );
+        printf("Prev = %p\n\n", (void *)  (iter -> prev ) );
 
 
         index += 1;
