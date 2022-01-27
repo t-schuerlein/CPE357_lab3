@@ -11,7 +11,7 @@ unsigned char myheap[1048576];
 #define PAGESIZE 1024 //or 2048, or 4096 …
 
 typedef struct chunkhead{
-    unsigned int size;
+    int size;
     // occupied means info = 1, info = 0 is free
     unsigned int info = 0;
     //FIXME changed pointers to chunkheads (used to be unsigned char)
@@ -30,14 +30,14 @@ int main(){
     first -> info = 0;
     first -> size = (1048576 - sizeof(chunkhead));
 
-unsigned char *a,*b,*c;
-    a = mymalloc(1000);
-b = mymalloc(1000);
-c = mymalloc(1000);
-// printf("trying to find %p\n", (void *)b);
-myfree(b);
-myfree(a);
-analyse();
+unsigned char *a,*b,*c; 
+a = mymalloc(1000); 
+b = mymalloc(4000); 
+c = mymalloc(1000); 
+myfree(b); 
+// myfree(a); 
+// myfree(c);
+analyse(); 
 
 }
 
@@ -50,7 +50,10 @@ unsigned char* mymalloc( int size){
     for(; p != NULL; p = (chunkhead*) p -> next){
         
         //FIXME size check is wrong
-        if(p->info == 0 && (p -> size - sizeof(chunkhead)) > size ){
+        if(p->info == 0 && (p -> size  > (size + sizeof(chunkhead)) )){
+
+            // printf("p -> size = %d and size + chunk = %d\n", p ->size, size);
+
             //page is now occupied
             p->info = 1;
             int alloc_size = 0;
@@ -85,9 +88,9 @@ unsigned char* mymalloc( int size){
         }
     }
 
-    // printf("got to the end of for loop without answer!\n");
-    unsigned char* blank = NULL;
-    return blank;
+    // printf("got to the end of for loop without answer for size = %d!\n", size);
+    
+    return NULL;
 
 }
 
@@ -103,29 +106,45 @@ void myfree(unsigned char* address){
 
         //TODO combine neighboring free blocks
         if( (unsigned char*)iter == (unsigned char *) address - sizeof(chunkhead)){
+
+           
+
             // free 
             iter -> info = 0;
             // printf("found the address %p\n" , (void *)  address);
         }
+
+        
+
         if (iter -> info == 0 && nextChunk && nextChunk -> info == 0){
+            // cout << "went to first if statement" << endl;
             // curr is first, next is second
             chunkhead * kill = nextChunk;
             chunkhead * keep = iter;
             keep -> size += kill -> size;
             keep -> next = kill -> next;
             chunkhead *newNext =  (chunkhead *)kill -> next;
-            newNext -> prev = (unsigned char *) keep;
+            if(newNext){
+                newNext -> prev = (unsigned char *) keep;
+            }
+            
         }
         if(iter-> info == 0 && lastChunk && lastChunk -> info  == 0){
+            // cout << "went to second if statement" << endl;
             // last is first, curr is second
             chunkhead * kill = iter;
-            chunkhead * keep = iter;
+            chunkhead * keep = lastChunk;
             keep -> size += kill -> size;
             keep -> next = kill -> next;
             chunkhead *newNext =  (chunkhead *)kill -> next;
-            newNext -> prev = (unsigned char *) keep;
+            if(newNext){
+                newNext -> prev = (unsigned char *) keep;
+            }
+            
 
         }
+
+        
         
     }
 
