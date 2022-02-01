@@ -28,15 +28,17 @@ int main(){
 
     chunkhead* first = (chunkhead*) myheap;
     first -> info = 0;
-    first -> size = (1048576 - sizeof(chunkhead));
+    first -> size = (1048576 );
 
 unsigned char *a,*b,*c; 
 a = mymalloc(1000); 
-b = mymalloc(4000); 
+b = mymalloc(1000); 
 c = mymalloc(1000); 
-myfree(b); 
-// myfree(a); 
-// myfree(c);
+
+
+// myfree(b);
+// mymalloc(1000);
+
 analyse(); 
 
 }
@@ -70,7 +72,7 @@ unsigned char* mymalloc( int size){
             // printf("alloc bytes ended up at %d\n", alloc_size);
            
            // amount of memory remaining = (rest mem) - (size we're allocating) - (new chunkhead size) 
-            int remaining_mem = p -> size  - alloc_size - sizeof(chunkhead);
+            int remaining_mem = p -> size  - alloc_size;//- sizeof(chunkhead);
             
             // set allocated size for p
             p -> size = alloc_size;
